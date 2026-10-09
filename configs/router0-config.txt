@@ -1,0 +1,82 @@
+! Router0 — Edge Router (Cisco 2911)
+! CMPG325-2026-003 | Client ID: CLI-003 | Tshiamo Dental & Surgery Practice
+!
+! --- LAN subinterfaces (router-on-a-stick) ---
+interface GigabitEthernet0/0
+ no shutdown
+!
+interface GigabitEthernet0/0.10
+ encapsulation dot1Q 10
+ ip address 192.168.11.1 255.255.255.128
+ ip nat inside
+ description DATA_VLAN
+!
+interface GigabitEthernet0/0.20
+ encapsulation dot1Q 20
+ ip address 192.168.11.129 255.255.255.192
+ ip nat inside
+ description VOIP_VLAN
+!
+interface GigabitEthernet0/0.30
+ encapsulation dot1Q 30
+ ip address 192.168.11.193 255.255.255.224
+ ip nat inside
+ ip access-group GUEST_RESTRICT in
+ description GUEST_VLAN
+!
+interface GigabitEthernet0/0.99
+ encapsulation dot1Q 99
+ ip address 192.168.11.225 255.255.255.240
+ description MGMT_VLAN
+!
+! --- WAN interfaces (dual ISP) ---
+interface GigabitEthernet0/1
+ ip address 203.0.113.2 255.255.255.252
+ ip nat outside
+ no shutdown
+ description ISP1_PRIMARY
+!
+interface GigabitEthernet0/2
+ ip address 198.51.100.2 255.255.255.252
+ no shutdown
+ description ISP2_SECONDARY
+!
+! --- Default Routing (edge/ISP path design) — assigned challenge ---
+ip route 0.0.0.0 0.0.0.0 203.0.113.1
+ip route 0.0.0.0 0.0.0.0 198.51.100.1
+!
+! --- NAT (required for internal VLANs to reach the simulated Internet) ---
+access-list 1 permit 192.168.11.0 0.0.0.255
+ip nat inside source list 1 interface GigabitEthernet0/1 overload
+! NOTE: Packet Tracer's simplified IOS does not support binding one NAT
+! access-list to two outside interfaces simultaneously, so NAT is bound
+! to Gig0/1 only. See Milestone 2 report, Section 3.5 / Section 6 (N5).
+!
+! --- GUEST_RESTRICT ACL (CR14 — contractor/guest wireless isolation) ---
+ip access-list extended GUEST_RESTRICT
+ deny ip 192.168.11.192 0.0.0.31 192.168.11.0 0.0.0.127
+ deny ip 192.168.11.192 0.0.0.31 192.168.11.128 0.0.0.63
+ deny ip 192.168.11.192 0.0.0.31 192.168.11.224 0.0.0.15
+ permit ip 192.168.11.192 0.0.0.31 any
+!
+! --- DHCP pools ---
+ip dhcp excluded-address 192.168.11.129
+ip dhcp pool VOIP_POOL
+ network 192.168.11.128 255.255.255.192
+ default-router 192.168.11.129
+ dns-server 8.8.8.8
+!
+ip dhcp excluded-address 192.168.11.193 192.168.11.199
+ip dhcp pool GUEST_POOL
+ network 192.168.11.192 255.255.255.224
+ default-router 192.168.11.193
+ dns-server 8.8.8.8
+!
+! --- Cisco CME (required for the 7960 IP phones to register via SCCP) ---
+telephony-service
+ max-ephones 7
+ max-dn 7
+ ip source-address 192.168.11.129 port 2000
+ auto assign 1 to 7
+!
+end

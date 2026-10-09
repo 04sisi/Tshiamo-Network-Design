@@ -1,0 +1,106 @@
+! Switch0 — Core Access Switch (Cisco 2960-24TT)
+! CMPG325-2026-003 | Client ID: CLI-003 | Tshiamo Dental & Surgery Practice
+!
+hostname Switch0
+!
+! --- VLANs ---
+vlan 10
+ name DATA
+vlan 20
+ name VOIP
+vlan 30
+ name GUEST
+vlan 99
+ name MGMT
+!
+! --- Trunk to Router0 ---
+interface FastEthernet0/1
+ switchport mode trunk
+ switchport trunk allowed vlan 10,20,30,99
+!
+! --- VLAN 10 (DATA) access ports ---
+interface range FastEthernet0/2 - 3
+ switchport mode access
+ switchport access vlan 10
+interface FastEthernet0/6
+ switchport mode access
+ switchport access vlan 10
+interface FastEthernet0/8
+ switchport mode access
+ switchport access vlan 10
+interface range FastEthernet0/9
+ switchport mode access
+ switchport access vlan 10
+interface FastEthernet0/11
+ switchport mode access
+ switchport access vlan 10
+interface FastEthernet0/13
+ switchport mode access
+ switchport access vlan 10
+interface FastEthernet0/15
+ switchport mode access
+ switchport access vlan 10
+interface FastEthernet0/17
+ switchport mode access
+ switchport access vlan 10
+!
+! --- VLAN 20 (VOIP) access ports — voice vlan required for 7960 CDP negotiation ---
+interface FastEthernet0/4
+ switchport mode access
+ switchport access vlan 20
+ switchport voice vlan 20
+interface FastEthernet0/5
+ switchport mode access
+ switchport access vlan 20
+ switchport voice vlan 20
+interface FastEthernet0/7
+ switchport mode access
+ switchport access vlan 20
+ switchport voice vlan 20
+interface FastEthernet0/10
+ switchport mode access
+ switchport access vlan 20
+ switchport voice vlan 20
+interface FastEthernet0/12
+ switchport mode access
+ switchport access vlan 20
+ switchport voice vlan 20
+interface FastEthernet0/14
+ switchport mode access
+ switchport access vlan 20
+ switchport voice vlan 20
+interface FastEthernet0/16
+ switchport mode access
+ switchport access vlan 20
+ switchport voice vlan 20
+!
+! --- VLAN 30 (GUEST) access port — AP0 ---
+interface FastEthernet0/21
+ switchport mode access
+ switchport access vlan 30
+!
+! --- VLAN 99 (MGMT) reserved access ports ---
+interface range FastEthernet0/18 - 20
+ switchport mode access
+ switchport access vlan 99
+interface range FastEthernet0/22 - 24
+ switchport mode access
+ switchport access vlan 99
+!
+! --- Management SVI ---
+interface Vlan99
+ ip address 192.168.11.226 255.255.255.240
+ no shutdown
+!
+ip default-gateway 192.168.11.225
+!
+! --- SSH management (Telnet disabled) ---
+ip domain-name tshiamo.local
+crypto key generate rsa general-keys modulus 1024
+username admin secret cisco123
+!
+line vty 0 15
+ login local
+ transport input ssh
+!
+end
